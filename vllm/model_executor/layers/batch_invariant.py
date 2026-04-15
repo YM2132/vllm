@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+import math
 import os
 from collections.abc import Callable
 from typing import Any
@@ -632,6 +633,32 @@ def matmul_batch_invariant(a, b, *, out=None):
         # multiplication logic.
         a_expanded = a.unsqueeze(0).expand(b.shape[0], -1, -1)
         return bmm_batch_invariant(a_expanded, b, out=out)
+    elif a.ndim > 3 or b.ndim > 3:
+        # Generic handler where one ndim greater than 3
+
+        # Broadcast dims to ensure both matrices have the same shape
+        # First get broadcast shape
+        broadcast_shape = torch.broadcast_shapes(a.shape[:-2], b.shape[:-2])
+
+        a = a.expand(broadcast_shape + a.shape[-2:])
+        b = b.expand(broadcast_shape + b.shape[-2:])
+
+        B = math.prod(broadcast_shape)
+
+        # Reuse broadcast shape to get all dims except mm dims
+        a_3d = a.reshape(B, a.shape[-2], a.shape[-1])
+        b_3d = b.reshape(B, b.shape[-2], b.shape[-1])
+
+        # Do batched matmul
+        result_3d = bmm_batch_invariant(a_3d, b_3d)
+
+        # Reshape back to [broadcast_shape, seq_a, seq_b]
+        result = result_3d.reshape(broadcast_shape + (a.shape[-2], b.shape[-1]))
+
+        if out is not None:
+            out.copy_(result)
+            return out
+        return result
     elif a.ndim == 4 and b.ndim == 4:
         # Handle 4D attention tensors: [batch, heads, seq, dim]
         # Reshape to 3D, process, reshape back
