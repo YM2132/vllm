@@ -27,6 +27,8 @@ DEVICE_TYPE = current_platform.device_type
         ((64, 16), (4, 16, 32)),
         # 3D x 2D
         ((4, 32, 64), (64, 16)),
+        # 4D x 2D
+        ((1, 4, 32, 64), (64, 16)),
         # 3D x 3D
         ((4, 32, 64), (4, 64, 16)),
         # 3D x 4D
@@ -35,8 +37,6 @@ DEVICE_TYPE = current_platform.device_type
         ((1, 2, 32, 64), (2, 64, 16)),
         # 4D x 4D
         ((1, 2, 32, 64), (4, 2, 64, 16)),
-        # 4D x 2D
-        ((1, 2, 32, 64), (64, 16)),
         # 2D x 4D
         ((32, 64), (1, 2, 64, 16)),
         # 2D x 5D
@@ -76,7 +76,7 @@ def test_matmul_correctness(a_shape, b_shape, dtype):
         standard_output,
         rtol=rtol,
         atol=atol,
-        msg=f"matmul mismatch fora ndim={a.ndim}, b ndim={b.ndim},",
+        msg=f"matmul mismatch for a ndim={a.ndim}, b ndim={b.ndim},",
     )
 
 
